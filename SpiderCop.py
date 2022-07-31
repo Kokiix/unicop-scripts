@@ -7,6 +7,11 @@ from pathlib import Path
 class SpiderCop(scrapy.Spider):
 	"""
 	Spider for scraping data from list of all US police agencies into a json
+
+	Run with:
+
+	$ pip install scrapy
+	$ scrapy runspider SpiderCop.py -s LOG_ENABLED=False
 	"""
 
 	name = "SpiderCop"
