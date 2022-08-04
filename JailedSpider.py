@@ -28,7 +28,6 @@ class JailedSpider(scrapy.Spider):
 		end_index = re.search(r'id="Former_federal_facilities"', page_html).start()
 		page_html = page_html[start_index:end_index].split("\n")
 
-		# for html_data in response.xpath("/html/body/div[3]/div[3]/div[5]/div[1]/table[1]/tbody/tr/td").getall():
 		for html_line in page_html:
 			if html_line.startswith("<h2>"):
 				prison_cat = re.search(r'>[A-Z].+?<', html_line)
