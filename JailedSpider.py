@@ -19,34 +19,46 @@ class JailedSpider(scrapy.Spider):
 
 	def parse(self, response):
 		current_jail_num = -1
+		current_prison_category = ""
 		data_type_num = 0
-		prison_data = {"United States penitentiaries": []}
+		prison_data = {}
 
-		for html_data in response.xpath("/html/body/div[3]/div[3]/div[5]/div[1]/table[1]/tbody/tr/td").getall():
-			data = re.findall(r'>[A-Z].+?\n', html_data)
-			if data:
-				data = data[0]
-				if "," in data:
-					prison_data["United States penitentiaries"].append({"name": data[1:-5]})
-					current_jail_num += 1
-					data_type_num = 0
-				else:
-					current_jail = prison_data["United States penitentiaries"][current_jail_num]
-					field_name = ""
-					match data_type_num:
-						case 0:
+		page_html = response.xpath("/html/body/div[3]/div[3]/div[5]/div[1]").get()
+		start_index = re.search(r'id="toc"', page_html).start()
+		end_index = re.search(r'id="Former_federal_facilities"', page_html).start()
+		page_html = page_html[start_index:end_index].split("\n")
+
+		# for html_data in response.xpath("/html/body/div[3]/div[3]/div[5]/div[1]/table[1]/tbody/tr/td").getall():
+		for html_line in page_html:
+			if html_line.startswith("<h2>"):
+				prison_cat = re.search(r'>[A-Z].+?<', html_line)
+				if prison_cat != None:
+					current_prison_category = prison_cat[0][1:-1]
+					current_jail_num = -1
+					prison_data[current_prison_category] = []
+			elif html_line.startswith("<td>"):
+				data = re.search(r'>[A-Z].+?(?:<|$)', html_line, flags = re.M)
+				if data:
+					data = data[0]
+					if "," in data:
+						prison_data[current_prison_category].append({"name": data[1:-1]})
+						current_jail_num += 1
+						data_type_num = 0
+					else:
+						current_jail = prison_data[current_prison_category][current_jail_num]
+						field_name = ""
+						if data_type_num == 0:
 							field_name = "location"
-						case 1:
+						elif data_type_num == 1:
 							field_name = "gender"
-						case 2:
+						elif data_type_num == 2:
 							field_name = "security_class"
-					current_jail[field_name] = data[1:-1]
-					data_type_num += 1
+						current_jail[field_name] = data[1:]
+						data_type_num += 1
 
-		print(json.dumps(prison_data, indent=4))
-		# file_name = os.path.dirname(__file__) + "federal_prisons.json"
-		# if os.path.exists(file_name):
-		# 	os.remove(file_name)
-		# with open(file_name, "w") as f:
-		# 	json.dump(AAAAAAAA, f)
+		file_name = os.path.dirname(__file__) + "/federal_prisons.json"
+		if os.path.exists(file_name):
+			os.remove(file_name)
+		with open(file_name, "w") as f:
+			json.dump(prison_data, f)
  
